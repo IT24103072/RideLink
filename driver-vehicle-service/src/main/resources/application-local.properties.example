@@ -1,0 +1,3 @@
+# Copy this file to application-local.properties (gitignored) and fill in
+# your real Atlas credentials before running.
+spring.mongodb.uri=mongodb+srv://REPLACE_USER:REPLACE_PASSWORD@hostel-system.ruvco8mg.mongodb.net/driver_vehicle_db?retryWrites=true&w=majority
