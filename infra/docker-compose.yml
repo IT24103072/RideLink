@@ -1,0 +1,123 @@
+services:
+  # ──────────────────────────────────────────
+  # Infrastructure
+  # ──────────────────────────────────────────
+  mongodb:
+    image: mongo:8.0
+    container_name: ridelink-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpass
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: ridelink-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"   # Management UI → http://localhost:15672 (guest/guest)
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────
+  # RideLink Microservices
+  # ──────────────────────────────────────────
+  account-service:
+    build:
+      context: ../account-service
+      dockerfile: Dockerfile
+    container_name: ridelink-account-service
+    ports:
+      - "8081:8081"
+    environment:
+      SERVER_PORT: 8081
+      MONGODB_URI: mongodb://root:rootpass@mongodb:27017/account_db?authSource=admin
+      JWT_SECRET: ${JWT_SECRET:-this-is-a-placeholder-dev-only-secret-change-me-please-1234567890}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: on-failure
+
+  driver-vehicle-service:
+    build:
+      context: ../driver-vehicle-service
+      dockerfile: Dockerfile
+    container_name: ridelink-driver-vehicle-service
+    ports:
+      - "8082:8082"
+    environment:
+      SERVER_PORT: 8082
+      MONGODB_URI: mongodb://root:rootpass@mongodb:27017/driver_db?authSource=admin
+      JWT_SECRET: ${JWT_SECRET:-this-is-a-placeholder-dev-only-secret-change-me-please-1234567890}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: on-failure
+
+  fare-payment-service:
+    build:
+      context: ../fare-payment-service
+      dockerfile: Dockerfile
+    container_name: ridelink-fare-payment-service
+    ports:
+      - "8084:8084"
+    environment:
+      SERVER_PORT: 8084
+      MONGODB_URI: mongodb://root:rootpass@mongodb:27017/fare_db?authSource=admin
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      JWT_SECRET: ${JWT_SECRET:-this-is-a-placeholder-dev-only-secret-change-me-please-1234567890}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  ride-management-service:
+    build:
+      context: ../ride-management-service
+      dockerfile: Dockerfile
+    container_name: ridelink-ride-management-service
+    ports:
+      - "8083:8083"
+    environment:
+      SERVER_PORT: 8083
+      MONGODB_URI: mongodb://root:rootpass@mongodb:27017/ride_db?authSource=admin
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      DRIVER_SERVICE_URL: http://driver-vehicle-service:8082
+      FARE_SERVICE_URL: http://fare-payment-service:8084
+      JWT_SECRET: ${JWT_SECRET:-this-is-a-placeholder-dev-only-secret-change-me-please-1234567890}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      driver-vehicle-service:
+        condition: service_started
+      fare-payment-service:
+        condition: service_started
+    restart: on-failure
+
+volumes:
+  mongodata:
