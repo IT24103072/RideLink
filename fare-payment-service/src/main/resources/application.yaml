@@ -1,0 +1,36 @@
+server:
+  port: ${SERVER_PORT:8084}
+
+spring:
+  application:
+    name: fare-payment-service
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://root:rootpass@localhost:27017/fare_db?authSource=admin}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:this-is-a-placeholder-dev-only-secret-change-me-please-1234567890}
+  fare:
+    base-fare: 300.00
+    per-km-rate: 80.00
+    per-min-rate: 15.00
+  rabbitmq:
+    ride-completed-exchange: ride.events
+    ride-completed-routing-key: ride.completed
+    ride-completed-queue: fare.ride-completed.queue
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  level:
+    com.ridelink.fare: INFO
