@@ -1,0 +1,32 @@
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  application:
+    name: ride-management-service
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://root:rootpass@localhost:27017/ride_db?authSource=admin}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+app:
+  services:
+    driver-service-url: ${DRIVER_SERVICE_URL:http://localhost:8082}
+    fare-service-url: ${FARE_SERVICE_URL:http://localhost:8084}
+  jwt:
+    secret: ${JWT_SECRET:this-is-a-placeholder-dev-only-secret-change-me-please-1234567890}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  level:
+    com.ridelink.ride: INFO
