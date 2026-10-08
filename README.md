@@ -1,31 +1,7 @@
-# RideLink 🚗
+# RideLink 
 
 A production-grade, microservices-based ride-hailing platform built with **Spring Boot 3.5** and **Java 17**.
 
-## Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    CLIENT (Postman / App)                 │
-└──────────────┬───────────┬──────────────┬───────────────┘
-               │           │              │
-       ┌───────▼──┐  ┌─────▼──────┐  ┌───▼──────────┐
-       │ Account   │  │  Driver &  │  │ Fare &       │
-       │ Service   │  │  Vehicle   │  │ Payment      │
-       │ :8081     │  │ Service    │  │ Service      │
-       └───────────┘  │ :8082      │  │ :8084        │
-                      └─────▲──────┘  └───▲──────────┘
-                            │ REST         │ REST + RabbitMQ
-                      ┌─────┴──────────────┴─────────┐
-                      │   Ride Management Service     │
-                      │          :8083                │
-                      └───────────────────────────────┘
-                                    │
-                      ┌─────────────▼──────────────┐
-                      │     MongoDB + RabbitMQ      │
-                      │   :27017       :5672        │
-                      └────────────────────────────┘
-```
 
 ## Services
 
