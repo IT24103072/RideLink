@@ -1,0 +1,324 @@
+{
+  "info": {
+    "name": "RideLink API Collection",
+    "_postman_id": "ridelink-api-collection-v1",
+    "description": "Complete Postman collection for all RideLink microservices: Account, Driver & Vehicle, Ride Management, and Fare & Payment.\n\nSetup:\n1. Start infra: `cd infra && docker compose up -d mongodb rabbitmq`\n2. Run each service locally with Maven or via Docker.\n3. Set the `JWT_TOKEN` collection variable after logging in.\n\nWorkflow:\n  Register Passenger → Login → Request Ride → (as Driver) Accept → Start → Complete",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "BASE_ACCOUNT",  "value": "http://localhost:8081", "type": "string" },
+    { "key": "BASE_DRIVER",   "value": "http://localhost:8082", "type": "string" },
+    { "key": "BASE_RIDE",     "value": "http://localhost:8083", "type": "string" },
+    { "key": "BASE_FARE",     "value": "http://localhost:8084", "type": "string" },
+    { "key": "JWT_TOKEN",     "value": "",  "type": "string", "description": "Set this after login" },
+    { "key": "RIDE_ID",       "value": "",  "type": "string", "description": "Set after requesting a ride" },
+    { "key": "DRIVER_ID",     "value": "",  "type": "string", "description": "Set after driver registration" }
+  ],
+  "item": [
+    {
+      "name": "1. Account Service",
+      "item": [
+        {
+          "name": "1.1 Register Passenger",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_ACCOUNT}}/api/auth/register", "host": ["{{BASE_ACCOUNT}}"], "path": ["api", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"passenger@ridelink.lk\",\n  \"password\": \"Password@123\",\n  \"fullName\": \"Amal Silva\",\n  \"phoneNumber\": \"+94771234567\",\n  \"role\": \"PASSENGER\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('status 201', () => pm.response.to.have.status(201));", "const r = pm.response.json(); pm.collectionVariables.set('JWT_TOKEN', r.token);"] } }]
+        },
+        {
+          "name": "1.2 Register Driver Account",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_ACCOUNT}}/api/auth/register", "host": ["{{BASE_ACCOUNT}}"], "path": ["api", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"driver@ridelink.lk\",\n  \"password\": \"Password@123\",\n  \"fullName\": \"Kamal Perera\",\n  \"phoneNumber\": \"+94779876543\",\n  \"role\": \"DRIVER\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1.3 Login (Passenger)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_ACCOUNT}}/api/auth/login", "host": ["{{BASE_ACCOUNT}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"passenger@ridelink.lk\",\n  \"password\": \"Password@123\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('status 200', () => pm.response.to.have.status(200));", "const r = pm.response.json(); pm.collectionVariables.set('JWT_TOKEN', r.token);"] } }]
+        },
+        {
+          "name": "1.4 Login (Driver)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_ACCOUNT}}/api/auth/login", "host": ["{{BASE_ACCOUNT}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"driver@ridelink.lk\",\n  \"password\": \"Password@123\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('status 200', () => pm.response.to.have.status(200));", "const r = pm.response.json(); pm.collectionVariables.set('JWT_TOKEN', r.token);"] } }]
+        },
+        {
+          "name": "1.5 Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": { "raw": "{{BASE_ACCOUNT}}/api/users/me", "host": ["{{BASE_ACCOUNT}}"], "path": ["api", "users", "me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Driver & Vehicle Service",
+      "item": [
+        {
+          "name": "2.1 Register Driver Profile (use Driver JWT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_DRIVER}}/api/drivers/profile", "host": ["{{BASE_DRIVER}}"], "path": ["api", "drivers", "profile"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"licenseNumber\": \"B1234567\",\n  \"vehicleMake\": \"Toyota\",\n  \"vehicleModel\": \"Prius\",\n  \"vehicleYear\": 2020,\n  \"licensePlate\": \"CAB-1234\",\n  \"vehicleColor\": \"Silver\",\n  \"vehicleCapacity\": 4,\n  \"vehicleType\": \"SEDAN\",\n  \"serviceArea\": \"Colombo\",\n  \"initialLatitude\": 6.9271,\n  \"initialLongitude\": 79.8612\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('status 201', () => pm.response.to.have.status(201));", "const r = pm.response.json(); pm.collectionVariables.set('DRIVER_ID', r.id);"] } }]
+        },
+        {
+          "name": "2.2 Get My Driver Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": { "raw": "{{BASE_DRIVER}}/api/drivers/profile/me", "host": ["{{BASE_DRIVER}}"], "path": ["api", "drivers", "profile", "me"] }
+          }
+        },
+        {
+          "name": "2.3 Get Driver by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{BASE_DRIVER}}/api/drivers/{{DRIVER_ID}}", "host": ["{{BASE_DRIVER}}"], "path": ["api", "drivers", "{{DRIVER_ID}}"] }
+          }
+        },
+        {
+          "name": "2.4 Get Available Drivers (Colombo, SEDAN)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_DRIVER}}/api/drivers/available?serviceArea=Colombo&vehicleType=SEDAN",
+              "host": ["{{BASE_DRIVER}}"],
+              "path": ["api", "drivers", "available"],
+              "query": [
+                { "key": "serviceArea", "value": "Colombo" },
+                { "key": "vehicleType", "value": "SEDAN" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.5 Update Driver Availability (AVAILABLE)",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{BASE_DRIVER}}/api/drivers/{{DRIVER_ID}}/availability?status=AVAILABLE",
+              "host": ["{{BASE_DRIVER}}"],
+              "path": ["api", "drivers", "{{DRIVER_ID}}", "availability"],
+              "query": [{ "key": "status", "value": "AVAILABLE" }]
+            }
+          }
+        },
+        {
+          "name": "2.6 Update Driver Location",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_DRIVER}}/api/drivers/{{DRIVER_ID}}/location", "host": ["{{BASE_DRIVER}}"], "path": ["api", "drivers", "{{DRIVER_ID}}", "location"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 6.9271,\n  \"longitude\": 79.8612,\n  \"address\": \"Colombo Fort\",\n  \"serviceArea\": \"Colombo\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Ride Management Service",
+      "item": [
+        {
+          "name": "3.1 Health Check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{BASE_RIDE}}/api/rides/health", "host": ["{{BASE_RIDE}}"], "path": ["api", "rides", "health"] }
+          }
+        },
+        {
+          "name": "3.2 Request Ride (Passenger JWT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_RIDE}}/api/rides", "host": ["{{BASE_RIDE}}"], "path": ["api", "rides"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickupAddress\": \"Colombo Fort Railway Station\",\n  \"pickupLatitude\": 6.9349,\n  \"pickupLongitude\": 79.8503,\n  \"destinationAddress\": \"Kandy City Centre\",\n  \"destinationLatitude\": 7.2906,\n  \"destinationLongitude\": 80.6337,\n  \"serviceArea\": \"Colombo\",\n  \"vehicleType\": \"SEDAN\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('status 201', () => pm.response.to.have.status(201));", "const r = pm.response.json(); pm.collectionVariables.set('RIDE_ID', r.id);"] } }]
+        },
+        {
+          "name": "3.3 Get Ride by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": { "raw": "{{BASE_RIDE}}/api/rides/{{RIDE_ID}}", "host": ["{{BASE_RIDE}}"], "path": ["api", "rides", "{{RIDE_ID}}"] }
+          }
+        },
+        {
+          "name": "3.4 My Passenger Rides",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": { "raw": "{{BASE_RIDE}}/api/rides/my/passenger", "host": ["{{BASE_RIDE}}"], "path": ["api", "rides", "my", "passenger"] }
+          }
+        },
+        {
+          "name": "3.5 Accept Ride (Driver JWT)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": { "raw": "{{BASE_RIDE}}/api/rides/{{RIDE_ID}}/accept", "host": ["{{BASE_RIDE}}"], "path": ["api", "rides", "{{RIDE_ID}}", "accept"] }
+          }
+        },
+        {
+          "name": "3.6 Start Ride (Driver JWT)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": { "raw": "{{BASE_RIDE}}/api/rides/{{RIDE_ID}}/start", "host": ["{{BASE_RIDE}}"], "path": ["api", "rides", "{{RIDE_ID}}", "start"] }
+          }
+        },
+        {
+          "name": "3.7 Complete Ride (Driver JWT)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": { "raw": "{{BASE_RIDE}}/api/rides/{{RIDE_ID}}/complete", "host": ["{{BASE_RIDE}}"], "path": ["api", "rides", "{{RIDE_ID}}", "complete"] }
+          }
+        },
+        {
+          "name": "3.8 Cancel Ride",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_RIDE}}/api/rides/{{RIDE_ID}}/cancel", "host": ["{{BASE_RIDE}}"], "path": ["api", "rides", "{{RIDE_ID}}", "cancel"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Changed my mind\"\n}"
+            }
+          }
+        },
+        {
+          "name": "3.9 My Driver Rides",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": { "raw": "{{BASE_RIDE}}/api/rides/my/driver", "host": ["{{BASE_RIDE}}"], "path": ["api", "rides", "my", "driver"] }
+          }
+        },
+        {
+          "name": "3.10 Admin – All Rides",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": { "raw": "{{BASE_RIDE}}/api/rides", "host": ["{{BASE_RIDE}}"], "path": ["api", "rides"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Fare & Payment Service",
+      "item": [
+        {
+          "name": "4.1 Health Check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{BASE_FARE}}/api/fares/health", "host": ["{{BASE_FARE}}"], "path": ["api", "fares", "health"] }
+          }
+        },
+        {
+          "name": "4.2 Estimate Fare (SEDAN, Colombo→Kandy)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_FARE}}/api/fares/estimate", "host": ["{{BASE_FARE}}"], "path": ["api", "fares", "estimate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickupAddress\": \"Colombo Fort\",\n  \"pickupLatitude\": 6.9271,\n  \"pickupLongitude\": 79.8612,\n  \"destinationAddress\": \"Kandy City Centre\",\n  \"destinationLatitude\": 7.2906,\n  \"destinationLongitude\": 80.6337,\n  \"vehicleType\": \"SEDAN\"\n}"
+            }
+          }
+        },
+        {
+          "name": "4.3 Estimate Fare (MOTORCYCLE, short trip)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_FARE}}/api/fares/estimate", "host": ["{{BASE_FARE}}"], "path": ["api", "fares", "estimate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickupLatitude\": 6.9271,\n  \"pickupLongitude\": 79.8612,\n  \"destinationLatitude\": 6.9000,\n  \"destinationLongitude\": 79.8500,\n  \"vehicleType\": \"MOTORCYCLE\",\n  \"directDistanceKm\": 5.0\n}"
+            }
+          }
+        },
+        {
+          "name": "4.4 Calculate Final Fare",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_FARE}}/api/fares/calculate", "host": ["{{BASE_FARE}}"], "path": ["api", "fares", "calculate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rideId\": \"{{RIDE_ID}}\",\n  \"vehicleType\": \"SEDAN\",\n  \"actualDistanceKm\": 115.0,\n  \"actualDurationMinutes\": 145,\n  \"surgeMultiplier\": 1.0\n}"
+            }
+          }
+        },
+        {
+          "name": "4.5 Get Fare by Ride ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": { "raw": "{{BASE_FARE}}/api/fares/ride/{{RIDE_ID}}", "host": ["{{BASE_FARE}}"], "path": ["api", "fares", "ride", "{{RIDE_ID}}"] }
+          }
+        },
+        {
+          "name": "4.6 Admin – All Fare Records",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JWT_TOKEN}}" }],
+            "url": { "raw": "{{BASE_FARE}}/api/fares", "host": ["{{BASE_FARE}}"], "path": ["api", "fares"] }
+          }
+        }
+      ]
+    }
+  ]
+}

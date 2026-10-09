@@ -1,0 +1,29 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  application:
+    name: account-service
+  config:
+    # Loads a local .env file (KEY=value lines) if present; Spring Boot does not read .env by default.
+    import: optional:file:.env[.properties]
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://root:rootpass@localhost:27017/account_db?authSource=admin}
+      auto-index-creation: true
+
+app:
+  jwt:
+    # Must be identical in all four services (HS256, at least 32 characters).
+    secret: ${JWT_SECRET:this-is-a-placeholder-dev-only-secret-change-me-please-1234567890}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  level:
+    com.ridelink.account: INFO
